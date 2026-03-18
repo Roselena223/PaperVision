@@ -18,20 +18,21 @@ def train_model(model, train_loader, val_loader, device):
     args = get_args()
     model = model.to(device)
     
-    # Set model as training mode: use running_loss to sum loss up
-    model.train()
-    running_loss = 0.0
-    
     # Initialize optimizer (Adam) and best validation loss tracker
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.wd)
     best_val_loss = float('inf')
     
     # Loop over epochs (full passes over the dataset)
-    for epoch in range(args.epochs):
         # Iterate over batches from train_loader
         # Each batch contains:
         # - images: list of tensors
         # - targets: list of dictionaries (boxes, labels)
+    for epoch in range(args.epochs):
+        
+        # Set model as training mode: use running_loss to sum loss up
+        model.train()
+        running_loss = 0.0
+        
         for images, targets in train_loader:
             
             # Move images to device and convert to float32
@@ -63,6 +64,11 @@ def train_model(model, train_loader, val_loader, device):
         train_epoch_loss = running_loss / len(train_loader.dataset)
         val_loss = validate_model(model, val_loader, device)
             
+        # Print training progress
+        print(f"Epoch {epoch + 1}/{args.epochs} | "
+            f"Train loss: {train_epoch_loss:.4f} | "
+            f"Val loss: {val_loss:.4f}")
+        
         # Save the best model (based on validation loss)
         if val_loss < best_val_loss:
             best_val_loss = val_loss
@@ -70,11 +76,7 @@ def train_model(model, train_loader, val_loader, device):
             os.makedirs(args.out_dir, exist_ok=True)
             torch.save(model.state_dict(), os.path.join(args.out_dir, 'best_model.pth'))
             
-        # Print training progress
-        print(f"Epoch {epoch + 1}/{args.epochs} | "
-            f"Train loss: {train_epoch_loss:.4f} | "
-            f"Val loss: {val_loss:.4f}")
-
+        
 # STEP 3: Initialize Validation function
 '''
 - Evaluate model performance on validation dataset
