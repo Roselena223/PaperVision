@@ -7,6 +7,8 @@ from args import get_args
 import os
 import torch
 import torch.optim as optim
+from utils import show_batch, plot_learning_curve      # NEW
+import pandas as pd                                    # NEW
 
 
 # STEP 2: Initialize Training function
@@ -21,6 +23,9 @@ def train_model(model, train_loader, val_loader, device):
     # Initialize optimizer (Adam) and best validation loss tracker
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.wd)
     best_val_loss = float('inf')
+    
+    # Initialize epoch log                                                      # NEW
+    history = {"epoch": [], "train_loss": [], "val_loss": []}
     
     # Loop over epochs (full passes over the dataset)
         # Iterate over batches from train_loader
@@ -46,6 +51,7 @@ def train_model(model, train_loader, val_loader, device):
                 for target in targets
             ]
             
+            show_batch(images, targets, batch_idx=0)
             # Forward & Backward pass: 
             optimizer.zero_grad()
             
@@ -63,11 +69,21 @@ def train_model(model, train_loader, val_loader, device):
         # Compute average training loss for the epoch & Run validation after each epoch
         train_epoch_loss = running_loss / len(train_loader.dataset)
         val_loss = validate_model(model, val_loader, device)
+        
+        # Save history                                                         # NEW
+        history["epoch"].append(epoch + 1)                                     # NEW
+        history["train_loss"].append(train_epoch_loss)                         # NEW
+        history["val_loss"].append(val_loss)
             
         # Print training progress
         print(f"Epoch {epoch + 1}/{args.epochs} | "
             f"Train loss: {train_epoch_loss:.4f} | "
             f"Val loss: {val_loss:.4f}")
+        
+        # Save CSV after every epoch                                           # NEW
+        os.makedirs(args.out_dir, exist_ok=True)                               # NEW
+        pd.DataFrame(history).to_csv(                                          # NEW
+            os.path.join(args.out_dir, "training_log.csv"), index=False)
         
         # Save the best model (based on validation loss)
         if val_loss < best_val_loss:
@@ -76,7 +92,12 @@ def train_model(model, train_loader, val_loader, device):
             os.makedirs(args.out_dir, exist_ok=True)
             torch.save(model.state_dict(), os.path.join(args.out_dir, 'best_model.pth'))
             
-        
+    # Draw learning curve                                        # NEW
+    plot_learning_curve(history, args.out_dir)                                        # NEW
+    print(f"Log saved: {args.out_dir}/training_log.csv")                              # NEW
+    print(f"Learning curve saved: {args.out_dir}/learning_curve.png")
+    
+    
 # STEP 3: Initialize Validation function
 '''
 - Evaluate model performance on validation dataset
