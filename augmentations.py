@@ -686,16 +686,16 @@ def build_train_transforms(image_size):
             ],
             prob=0.80,
         ),
-        # OneOf(
-        #     [
-        #         NoTransform(),
-        #         ColorJitter(brightness=0.20, contrast=0.20, saturation=0.15, hue=0.03, prob=1.0),
-        #         GaussianBlur(kernel_size=3, sigma=(0.1, 1.5), prob=1.0),
-        #         RandomGrayscale(prob=1.0),
-        #         RandomSharpness(sharpness_factor_range=(0.7, 1.8), prob=1.0),
-        #     ],
-        #     prob=0.60,
-        # ),
+        OneOf(
+            [
+                NoTransform(),
+                ColorJitter(brightness=0.20, contrast=0.20, saturation=0.15, hue=0.03, prob=1.0),
+                GaussianBlur(kernel_size=3, sigma=(0.1, 1.5), prob=1.0),
+                RandomGrayscale(prob=1.0),
+                RandomSharpness(sharpness_factor_range=(0.7, 1.8), prob=1.0),
+            ],
+            prob=0.60,
+        ),
         # ToTensor(),
         # OneOf(
         #     [
