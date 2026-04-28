@@ -49,10 +49,12 @@ class ObjDetectionDataset(torch.utils.data.Dataset):
         target = {
             "boxes": torch.tensor(boxes, dtype=torch.float32).clone(),
             "labels": torch.tensor(labels, dtype=torch.int64).clone(),
-            "image_id": torch.tensor([idx]),
+            "image_id": torch.tensor([idx]).clone(),
         }
         # TODO 2: Return what you need from this class
         # your code here
         image, target = self.transform(image, target)
+        image = image.clone()
+        target = {k: v.clone() if torch.is_tensor(v) else v for k, v in target.items()}
         
         return image, target
