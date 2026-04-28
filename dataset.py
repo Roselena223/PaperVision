@@ -1,13 +1,19 @@
 import torch
-from PIL import Image
+from PIL import Image, ImageOps
 from torchvision.transforms.functional import to_tensor
 from args import get_args
 from utils import resize_box_xyxy
+import augmentations as aug
 
 
 class ObjDetectionDataset(torch.utils.data.Dataset):
-    def __init__(self, df):
+    def __init__(self, df, transform=None):
         self.df = df.reset_index(drop=True)
+        
+        if transform is None:
+            self.transform = aug.NoTransform()
+        else:
+            self.transform = aug.Compose(transform)
 
     def __len__(self):
         return len(self.df)
@@ -19,11 +25,12 @@ class ObjDetectionDataset(torch.utils.data.Dataset):
         row = self.df.iloc[idx]
 
         img = Image.open(row["images"]).convert("RGB")
+        img = ImageOps.exif_transpose(img) 
         w, h = img.size
         
-        image = img.resize((args.image_size, args.image_size))
+        image_resized = img.resize((args.image_size, args.image_size))
         
-        image = to_tensor(img)
+        image = to_tensor(image_resized)
 
         boxes, labels = [], []
         with open(row["labels"]) as f:
@@ -40,10 +47,12 @@ class ObjDetectionDataset(torch.utils.data.Dataset):
                 labels.append(int(cls) + 1)
 
         target = {
-            "boxes": torch.tensor(boxes, dtype=torch.float32),
-            "labels": torch.tensor(labels, dtype=torch.int64),
+            "boxes": torch.tensor(boxes, dtype=torch.float32).clone(),
+            "labels": torch.tensor(labels, dtype=torch.int64).clone(),
             "image_id": torch.tensor([idx]),
         }
         # TODO 2: Return what you need from this class
         # your code here
+        image, target = self.transform(image, target)
+        
         return image, target
